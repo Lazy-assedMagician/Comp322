@@ -1,0 +1,28 @@
+Script started on Wed 18 May 2016 10:13:46 PM PDT
+[?1034hksh-4.1$ cat banner.txt
+##############################
+# Student: Nereida Herrera   #
+# Comp 322 Sp 16             #
+# T/Th 2:30 pm               #
+# Project 4: My LS           #
+##############################
+* The following cases were tested for:
+	1 - Error handling for files that don't exist
+	2 - Multiple file inputs 
+ksh-4.1$ ./myls
+./myls: Need at least one file to read from
+ksh-4.1$ ./myls someFile
+./myls: relative pathnames are treated as relative to user's home directory: /home/users14/nmh91616
+ksh-4.1$ ./myls testFile.txt lab4.log
+rw- nmh91616 testFile.txt
+rw- nmh91616 lab4.log
+ksh-4.1$ ls -l /home/users14/m[Knmh91616/testFile.txt /home/users14/nmh91616/lab4.log
+-rw-------. 1 nmh91616 users  0 Sep 29  2015 /home/users14/nmh91616/lab4.log
+-rw-------. 1 nmh91616 users 52 May 18 21:17 /home/users14/nmh91616/testFile.txt
+ksh-4.1$ ./myls /home/users14/nmh91616/322/project3/mywc.c
+rwx nmh91616 /home/users14/nmh91616/322/project3/mywc.c
+ksh-4.1$ ls -l /home/users14/nmh91616/322/po[Kroject3/mywc.c
+-rwx------. 1 nmh91616 users 8034 May 18 14:31 /home/users14/nmh91616/322/project3/mywc.c
+ksh-4.1$ exit
+
+Script done on Wed 18 May 2016 10:15:36 PM PDT
