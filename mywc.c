@@ -1,0 +1,271 @@
+/**********************************
+* Comp 322 Sp 15
+* Student: Nereida Herrera
+* Project 3
+* file: mywc.c
+* Last modified: 5/17/16
+* Summary: Emulates UNIX's wc command
+* and handles the options c (byte count),
+* l (line count), and w (word count).
+**************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+short cFlag = 0; // -c flag on command line?
+short lFlag = 0; // -l flag on command line?
+short wFlag = 0; // -w flag on command line?
+
+FILE *currFile; // file pointer to current file
+
+/********** Function Prototypes **********/
+unsigned int byteCount(FILE *fp);
+unsigned int lineCount(FILE *fp);
+unsigned int wordCount(FILE *fp);
+void stdinCounts(short charFlag, short lineFlag, short wordFlag, int total[]);
+void fileCounts(FILE *fp, short charFlag, short lineFlag, short wFlag, int temp[]);
+
+int main(int argc, char *argv[]){
+  
+  int lineCnt=0, charCnt=0, wordCnt=0; // line, byte, word counts
+  char *cmdName; 	                     // wc command name
+  cmdName = argv[0]; // first element in argv is the command
+  
+  int i;  // count to keep track where we are in argv[]
+  int j;  // count to keep track of which character we're looking at in argv[i]
+  char c; // current character
+  
+  
+/********** Process command options **********/
+  for(i = 1; i < argc; i++){ 
+      c = argv[i][0];  // get the first character in argv[i]
+      //printf("DEBUG: in argv[%d][0] = %c\n", i, c);
+      if(c == '-'){    // encountered possible option
+       	for(j = 1; (c = argv[i][j]) != '\0'; j++){ // check the string in argv[i] for user options
+          //printf("DEBUG: looking at argv[%d][%d]\n", i,j);
+          switch(c){
+            case 'c':
+              cFlag = 1;
+              break;
+            case 'l':
+              lFlag = 1;
+              break;
+            case 'w':
+              wFlag = 1;
+              break;
+            case 'C':
+              cFlag = 1;
+              break;
+            case 'L': 
+              lFlag = 1;
+              break;
+            case 'W':
+              wFlag = 1;
+              break;
+            default:
+              fprintf(stderr, "%s: invalid option '-%c'\n", cmdName, c);
+              return 1; 
+          }
+       	}	  
+      }
+    }
+	
+  if(cFlag == 0 && lFlag == 0 && wFlag == 0){
+    cFlag = lFlag = wFlag = 1; // no options were specified so set all flags
+  }
+  // debug
+  // printf("l = %d, w = %d, b = %d\n", lFlag, wFlag, cFlag);
+  
+  unsigned int total[3] = {0, 0, 0}; // total counts [lines, words, bytes]
+  unsigned int temp[3] = {0, 0, 0};  // temp counts for current file being processed
+  
+/********** Process command file arguments **********/
+  int fileCount = 0; // keeps track of how many files we processed
+                     /* NOTE: this variable is mainly for
+                      *  the case that a user doesn't 
+                      * specify a file as an argument
+                      * so we'll look to stdin to perform our counts
+                      */
+  for(i = 1; i < argc; i++){ 
+    //printf("DEBUG: in argv[%d][0] = %c\n", i, c);
+    if(argv[i][0] == '-'){      // could be stdin
+        if(argv[i][1] == '\0'){ // second character should be null to signify stdin
+          stdinCounts(cFlag, lFlag, wFlag, temp);
+          total[0] += temp[0]; // lines
+          total[1] += temp[1]; // words
+          total[2] += temp[2]; // bytes
+          //printf("\nDEBUG: temp[%d, %d, %d]", temp[0], temp[1], temp[2]);
+          //printf("\nDEBUG: total[%d, %d, %d]", total[0], total[1], total[2]);
+          fileCount++;
+        }
+    }
+    else{ // we got a possible file name
+      currFile = fopen(argv[i], "r"); // open file
+      if(currFile == NULL){
+        fprintf(stderr, "\n%s: %s: No such file \n", cmdName, argv[i]);
+        return 1;
+      }
+      else{
+        fileCounts(currFile, cFlag, lFlag, wFlag, temp);
+        total[0] += temp[0]; // lines
+        total[1] += temp[1]; // words
+        total[2] += temp[2]; // bytes
+        //printf("\nDEBUG: temp[%d, %d, %d]", temp[0], temp[1], temp[2]);
+        //printf("\nDEBUG: total[%d, %d, %d]", total[0], total[1], total[2]);
+        printf("\t%s", argv[i]);
+        fileCount++;
+      }
+    }
+ 
+  }
+  if(fileCount == 0){ // no file arguments provided
+   // printf("\nDEBUG: before temp[%d, %d, %d]", temp[0], temp[1], temp[2]);
+    stdinCounts(cFlag, lFlag, wFlag, temp); // take input from stdin
+    total[0] += temp[0]; // lines
+    total[1] += temp[1]; // words
+    total[2] += temp[2]; // bytes
+   //printf("\nDEBUG: temp[%d, %d, %d]", temp[0], temp[1], temp[2]);
+    //printf("\nDEBUG: after total[%d, %d, %d]", total[0], total[1], total[2]);
+    fileCount++;
+    
+  
+  }
+  
+  int printFlags[3] = {lFlag, wFlag, cFlag}; // determines what total counts to print to screen
+  
+  if(fileCount > 1){ // only print total if more than one file read
+    printf("\n");
+    for(i = 0; i < 3; i++){
+      if(printFlags[i])
+        printf("\t%d", total[i]);
+    } 
+    printf("\tTotal");
+  }
+  printf("\n");
+  
+  
+  
+  
+
+  return 0;
+}   
+ 
+/********** Function Definitions **********/
+
+// counts bytes
+unsigned int byteCount(FILE *fp){
+  char c; // keep track of current character
+  int cCount = 0;
+  while((c = fgetc(fp)) != EOF){
+    ++cCount;
+  }
+  return cCount;
+}
+
+// count newlines
+unsigned int lineCount(FILE *fp){
+  char c;
+  int lCount = 0;
+  while((c = fgetc(fp)) != EOF){
+    if(c == '\n')
+    ++lCount;
+  }
+  return lCount;
+}
+// count words
+unsigned int wordCount(FILE *fp){
+//printf("(debug: counting words)");
+  char c;
+  int inWord = 0; // word flag
+  		            // 0 if we're not in a word, 1 otherwise*/
+  int wCount = 0;
+  
+  while((c = fgetc(fp)) != EOF){
+    if(c != ' ' && c != '\n' && c != '\t' && inWord ==0 ){ // we've got a letter and we're not considered to be in a word yet
+      // printf("debug IN WORD\n");
+      inWord = 1; // found a word
+      wCount++;   // increment word count
+        
+    }
+    else if(inWord == 1 && ((c == ' ') || (c == '\n') || (c == '\t')))
+      inWord = 0; // turn off flag as we're traversing a words
+  }
+  return wCount;
+}
+
+// performed flagged counts, print counts for current file, and return total counts for current file
+void stdinCounts(short charFlag, short lineFlag, short wordFlag, int total[]){
+  // let user type what they want on the console
+  int c;
+  unsigned int bytes = 0;
+  unsigned int lines = 0;
+  unsigned int words = 0;
+  
+  int inWord = 0; // flag for when we're in a word
+  
+  while((c = getchar()) != EOF){
+    // count bytes
+    bytes++;
+    
+    // count lines
+    if(c == '\n')
+      lines++;
+      
+    // count words
+    if(c != ' ' && c != '\n' && c != '\t' && inWord ==0 ){ // we've got a letter and we're not considered to be in a word yet
+      inWord = 1; // found a word
+      words++;   // increment word count        
+    }
+    else if(inWord == 1 && ((c == ' ') || (c == '\n') || (c == '\t')))
+      inWord = 0; // turn off flag as we're traversing a words
+  }
+  
+  // print final counts for this file
+  printf("\n");
+  if(lineFlag == 1)
+    printf("\t%d", lines);
+  if(wordFlag == 1)
+    printf("\t%d", words);
+  if(charFlag == 1)
+    printf("\t%d", bytes);
+    
+  // add up the totals
+  total[0] = lines;
+  total[1] = words;
+  total[2] = bytes;
+  printf("\tstdin\n");
+
+}
+void fileCounts(FILE *fp, short charFlag, short lineFlag, short wordFlag, int total[]){
+  // initialize temporary counts to 0 (for calculating the total)
+  total[0] = 0;
+  total[1] = 0;
+  total[2] = 0;
+  
+  // initialize counts
+  unsigned int bytes = 0;
+  unsigned int lines = 0;
+  unsigned int words = 0;
+  
+  printf("\n");
+  if(lineFlag == 1){
+    lines = lineCount(fp);
+    printf("\t%d", lines);
+  }
+  rewind(fp); // go back to beginning of file
+  if(wordFlag == 1){
+    words = wordCount(fp);
+    printf("\t%d", words);
+  }
+  rewind(fp); // go back to beginning of file
+  if(charFlag == 1){
+    bytes = byteCount(fp);
+    printf("\t%d", bytes);
+  }
+
+  // add up the totals
+  total[0] += lines;
+  total[1] += words;
+  total[2] += bytes;
+
+  //return total; // return pointer to array
+}
