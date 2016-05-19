@@ -5,10 +5,13 @@
  * Last Mod: 5/18/16
  * Summary: Personal implementation of the UNIX command ls -l.
  *          User's permissions are displayed for each file
- *          on the command line.
- * NOTE:   This program needs filenames or pathnames to files in
+ *          on the command line in the order read, write, execute, 
+ *          followed by the user's name.
+ *
+ * NOTE:   This program needs filenames or file pathnames to files in
  *         order to display the desired results. Will not work if 
- *         no filenames or pathnames are specified.
+ *         no filenames or pathnames are specified. 
+ *         Also will not work with directories, only files.s
  *
  * Remark: the function fstatat() from sys/stat.h is used because
  *         it enables us to interpret a relative pathname, relative 
@@ -44,11 +47,13 @@ int main(int argc, char *argv[]){
   char* userDir;          // holds home directory of user
   struct passwd *user;    // holds information about a user
   uid_t userID;           // holds current user ID
+  char *userName;         // holds name of user
 
 /********** Get user info **********/  
   userID = getuid();      // gets real user ID of the calling process
   user = getpwuid(userID);// find the user and get their info
-  userDir = user->pw_dir;     // get user home directory  
+  userDir = user->pw_dir;     // get user home directory
+  userName = user->pw_name;  
 
 /********** Get file descriptor of user home directory **********/ 
 /* Remark: this is a necessary step in order to use fstatat() 
@@ -75,50 +80,35 @@ int main(int argc, char *argv[]){
   //int currFD;     // file descriptor for the current file we're looking at
  
   for(i = 1; i < argc; i++){
-    // attempt to open desired file
-    //currFD = open(argv[i], O_RDONLY); // create file descriptor for the current file
-                                      // Remark: open as read-only since we're not modifying it 
-//    if(currFD == -1){ // unable to open file
-//      fprintf(stderr, "%s: unable to open file %s", cmdName, argv[i]);
-//      exit(EXIT_FAILURE);
-//    }
-    
     fstatatErr = fstatat(homeFD, argv[i], &fileStat, 0); // get file status of current file
     
     // error checking results of fstatat()
     switch(fstatatErr){
       case EBADF:
         fprintf(stderr,"%s: dirfd is not a valid file descriptor\n", cmdName);
-        //close(currFD); // close current file
         closedir(homeStream);   // close user home directory
         exit(EXIT_FAILURE);
         break;
       case EINVAL:
         fprintf(stderr, "%s: invalid flag specified in flags\n", cmdName);
-        //close(currFD);
         closedir(homeStream);
         exit(EXIT_FAILURE);
         break;
       case ENOTDIR:
         fprintf(stderr, "%s: %s is a relative path and dirfd is a file descriptor referring to a file other than a directory\n", cmdName, argv[i]);
-        //close(currFD);
         closedir(homeStream);
         exit(EXIT_FAILURE);
         break;
       case -1:
         fprintf(stderr, "%s: relative pathnames are treated as relative to user's home directory: %s\n", cmdName, userDir);
-        //close(currFD);
         closedir(homeStream);
         exit(EXIT_FAILURE);
         break;
       default:
-        printf("File status obtained!\n");
-    }
-    
+        break; // file status obtained successfully
+    }    
     printPermissions(fileStat, *user); // print user's permissions
-    printf(" %s\n", argv[i]);          // print current file's name
-    
-    //close(currFD); // close the current file
+    printf(" %s %s\n", userName, argv[i]);          // print current file's name
   }
  
   closedir(homeStream); // close user home directory
@@ -143,34 +133,30 @@ void printPermissions(struct stat currFile, struct passwd user){
  * S_IWOTH = write by others
  * S_IXOTH = execute/search by others
  */
- printf("DEBUG - printing permissions!\n");
+
   mode_t fileMode = currFile.st_mode; // get the current file's mode (can derive permission bits from this)
-  printf("DEBUG - %d(mode bits)\n", fileMode);
   
   // user and owner IDs
   uid_t ownerID = currFile.st_uid;
   uid_t userID = user.pw_uid;
-  printf("DEBUG - got IDs %d (owner) %d (user)\n", ownerID, userID);
+  
   // user and owner group IDs
   gid_t ownerGroup = currFile.st_gid;
   gid_t userGroup = user.pw_gid;
-  printf("DEBUG - got group IDs %d (owner) %d (user)\n", ownerGroup, userGroup);
+ 
   // is the user the owner?
   if(userID == ownerID){
-    printf("DEBUG - owner ");
     printf(fileMode & S_IRUSR ? "r" : "-"); // decipher owner read bit
     printf(fileMode & S_IWUSR ? "w" : "-"); // decipher owner write bit
     printf(fileMode & S_IXUSR ? "x" : "-"); // decipher owner execute/search bit
   } 
   // is the user part of the group of the owner?
   else if(userGroup == ownerGroup){
-    printf("DEBUG - group ");
     printf(fileMode & S_IRGRP ? "r" : "-"); // decipher group read bit
     printf(fileMode & S_IWGRP ? "w" : "-"); // decipher group write bit
     printf(fileMode & S_IXGRP ? "x" : "-"); // decipher group execute/search bit
   }
   else{ // user is part of 'others'
-    printf("DEBUG - other ");
     printf(fileMode & S_IROTH ? "r" : "-"); // decipher others read bit
     printf(fileMode & S_IWOTH ? "w" : "-"); // decipher others write bit
     printf(fileMode & S_IXOTH ? "x" : "-"); // decipher others execute/search bit
