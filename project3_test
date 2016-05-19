@@ -1,4 +1,4 @@
-Script started on Wed 18 May 2016 02:40:58 PM PDT
+Script started on Wed 18 May 2016 11:32:15 PM PDT
 [?1034hksh-4.1$ cat banner.txt
 ##############################
 # Student: Nereida Herrera   #
@@ -11,55 +11,6 @@ Script started on Wed 18 May 2016 02:40:58 PM PDT
 	2 - Error handling for invalid options
 	3 - Error handling for invalid file names
 	4 - Specify command options, but not files so we read in from stdin
-ksh-4.1$ echo "########## Test File User[Kd ##########"
-########## Test File Used ##########
-ksh-4.1$ cat test.txt
-Hello World!
-123 ...
-ksh-4.1$ j[K./n[Kmywc - test.txt - banner.txt
-hello world!
-hi again
-
-	2	4	22	stdin
-
-	2	4	21	test.txt
-goodbye world!
-bye bye
-
-	3	4	24	stdin
-
-	11	71	444	banner.txt
-	18	83	511	Total
-ksh-4.1$ wc - test.txt - banner.txt
-hello world!
-hi again
-      2       4      22 -
-      2       4      21 test.txt
-goodbye world!
-bye bye
-      2       4      23 -
-     11      71     444 banner.txt
-     17      83     510 total
-ksh-4.1$ ./mywc -dog
-./mywc: invalid option '-d'
-ksh-4.1$ wc -dog
-wc: invalid option -- 'd'
-Try `wc --help' for more information.
-ksh-4.1$ ./mywc someFile
-
-./mywc: someFile: No such file 
-ksh-4.1$ wc someFile
-wc: someFile: No such file or directory
-ksh-4.1$ wc -bw test.txt
-wc: invalid option -- 'b'
-Try `wc --help' for more information.
-ksh-4.1$ wc -cw test.txt
- 4 21 test.txt
-ksh-4.1$ w[K./mywc -cw test.txt
-
-	4	21	test.txt
-ksh-4.1$ cat[K[K[Kecho "########## S[KProjet [K[Kct Source Code ##########"
-########## Project Source Code ##########
 ksh-4.1$ cat mywc.c
 /**********************************
 * Comp 322 Sp 15
@@ -331,6 +282,51 @@ void fileCounts(FILE *fp, short charFlag, short lineFlag, short wordFlag, int to
   total[2] += bytes;
 
   //return total; // return pointer to array
-}ksh-4.1$ exit
+}ksh-4.1$ gcc -o mywc ./mywc[K[K[K[K[K[Kmywc.c
+ksh-4.1$ ./mywc - test.txt - banner.txt
+hello world!
+hi
 
-Script done on Wed 18 May 2016 02:44:43 PM PDT
+	2	3	16	stdin
+
+	2	4	21	test.txt
+goodbye world!
+bye
+
+	3	3	20	stdin
+
+	11	71	444	banner.txt
+	18	81	501	Total
+ksh-4.1$ wc - test.txt - banner.txt
+hello world!
+hi
+      2       3      16 -
+      2       4      21 test.txt
+goodbye world!
+bye
+      2       3      19 -
+     11      71     444 banner.txt
+     17      81     500 total
+ksh-4.1$ ./mywc - d[K[Kd -w
+./mywc: invalid option '-d'
+ksh-4.1$ wc -d -w
+wc: invalid option -- 'd'
+Try `wc --help' for more information.
+ksh-4.1$ ./mywc someFile
+
+./mywc: someFile: No such file 
+ksh-4.1$ wc someFile
+wc: someFile: No such file or directory
+ksh-4.1$ ./mywc -cl
+hi there!
+this is a test
+
+	2	25	stdin
+
+ksh-4.1$ wc -cl
+hi there!
+thi sis a test
+      2      25
+ksh-4.1$ exit
+
+Script done on Wed 18 May 2016 11:35:16 PM PDT
